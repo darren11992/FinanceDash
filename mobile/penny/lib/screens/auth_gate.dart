@@ -8,12 +8,15 @@
 /// - Initial session check (is the user already logged in?)
 /// - Reactive switching when the user signs in or out
 /// - Loading state while the initial session is being resolved
+/// - Invalidating the connections provider on auth change so it
+///   refetches (or clears) when the user signs in/out
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../providers/connections_provider.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -22,24 +25,25 @@ class AuthGate extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check for an existing session on app launch.
-    // The Supabase SDK persists the session to secure storage
-    // automatically, so this handles the "already logged in" case.
-    final session = Supabase.instance.client.auth.currentSession;
+    // Watch the auth state stream so the widget rebuilds on every
+    // auth event (sign in, sign out, token refresh).
+    final authState = ref.watch(_authStreamProvider);
 
-    // Also listen to the auth state stream for reactive updates.
-    // This fires when the user signs in, signs out, or the token
-    // is refreshed.
-    ref.listen(_authStreamProvider, (_, next) {
-      // Force a rebuild when auth state changes.
-      // The session check below will pick up the new state.
-    });
-
-    if (session != null) {
-      return const HomeScreen();
-    }
-
-    return const LoginScreen();
+    return authState.when(
+      data: (state) {
+        if (state.session != null) {
+          // Invalidate connections so they refetch with the current session.
+          // This handles: sign-in after the provider returned [] with no session,
+          // and re-sign-in as a different user.
+          ref.invalidate(connectionsProvider);
+          return const HomeScreen();
+        }
+        return const LoginScreen();
+      },
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (_, _) => const LoginScreen(),
+    );
   }
 }
 

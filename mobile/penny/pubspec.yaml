@@ -43,6 +43,9 @@ dependencies:
   # Deep link / URL launcher (TrueLayer OAuth)
   url_launcher: ^6.3.1
 
+  # Incoming deep link handling (pennyapp://callback)
+  app_links: ^6.4.0
+
   # Environment variables
   flutter_dotenv: ^5.2.1
 

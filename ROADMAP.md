@@ -19,8 +19,9 @@
 | 5 | Consent Management & Notifications | 2 weeks | Sprint 4 |
 | 6 | Polish, Testing & Sandbox Sign-Off | 2 weeks | Sprint 5 |
 | 7 | Production Prep & TrueLayer Live | 2 weeks | Sprint 6 |
+| 8 | Tech Debt & Dependency Upgrades | 1 week | Sprint 7 |
 
-**Total estimated timeline: ~15 weeks**
+**Total estimated timeline: ~16 weeks**
 
 ---
 
@@ -318,6 +319,43 @@
 - Real transactions sync without issues
 - App submitted for internal beta testing
 - Privacy policy and terms of service drafted
+
+---
+
+## Sprint 8: Tech Debt & Dependency Upgrades (1 week)
+
+**Goal:** Upgrade all dependencies to latest major versions, clean up accumulated tech debt, and ensure the codebase is maintainable going forward.
+
+### Flutter Dependency Upgrades
+
+- [ ] Upgrade `flutter_riverpod` from ^2.6.1 to ^3.x — rewrite providers to use Riverpod 3 API (code generation, new provider syntax)
+- [ ] Upgrade `app_links` from ^6.4.0 to ^7.x — update deep link listener API in `deep_link_service.dart`
+- [ ] Upgrade `flutter_dotenv` from ^5.2.1 to ^6.x — update env loading calls if API changed
+- [ ] Run `flutter pub upgrade --major-versions` for remaining transitive dependencies
+- [ ] Run `flutter analyze` and fix any new lint warnings from upgraded packages
+- [ ] Verify `flutter build web` compiles cleanly
+
+### Backend Dependency Upgrades
+
+- [ ] Audit `requirements.txt` — check all packages for latest stable versions
+- [ ] Upgrade any backend dependencies with available major versions
+- [ ] Run full test suite after upgrades, fix any breakage
+- [ ] Regenerate `pip freeze > requirements-lock.txt` for reproducible builds
+
+### General Tech Debt
+
+- [ ] Review and remove any TODO/FIXME comments that are no longer relevant
+- [ ] Consolidate error handling patterns across all backend routers
+- [ ] Review logging — ensure all routes log enough context for debugging without leaking secrets
+- [ ] Move TrueLayer state nonces from in-memory dict to Redis or DB (required for multi-worker production)
+- [ ] Add type hints to any untyped functions in backend services
+- [ ] Review Dart code for any `dynamic` types that can be made explicit
+
+### Definition of Done
+- All Flutter and backend dependencies on latest stable versions
+- `flutter analyze` — 0 issues
+- All backend tests pass
+- No known tech debt items remaining that would block production operations
 
 ---
 

@@ -208,16 +208,23 @@ async def list_connections(
 
     Returns metadata only — tokens are never exposed to the client.
     """
-    result = (
-        db.table("bank_connections")
-        .select(
-            "id, provider_id, provider_name, status, last_synced_at, "
-            "consent_created_at, consent_expires_at, error_message, created_at"
+    try:
+        result = (
+            db.table("bank_connections")
+            .select(
+                "id, provider_id, provider_name, status, last_synced_at, "
+                "consent_created_at, consent_expires_at, error_message, created_at"
+            )
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .execute()
         )
-        .eq("user_id", user_id)
-        .order("created_at", desc=True)
-        .execute()
-    )
+    except Exception as e:
+        logger.error("Failed to list bank_connections for user %s: %s", user_id, e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve bank connections",
+        )
 
     return result.data
 

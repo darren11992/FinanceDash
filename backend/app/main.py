@@ -62,11 +62,17 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
+    # In production, restrict this to your app's domain.
+    # For development, allow common local origins.
+    # NOTE: allow_credentials=True is incompatible with allow_origins=["*"].
+    # The CORS spec requires the server to echo the specific origin when
+    # credentials (Authorization header) are included.
     allow_origins=[
-        # In production, restrict this to your app's domain / deep-link scheme.
-        # For development, allow all origins.
-        "*" if settings.app_debug else "",
-    ],
+        "http://localhost:8080",   # Flutter web dev server
+        "http://localhost:3000",   # Alternate dev port
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:3000",
+    ] if settings.app_debug else [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
