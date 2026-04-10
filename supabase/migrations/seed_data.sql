@@ -130,61 +130,61 @@ INSERT INTO public.transactions (
 -- Monzo Current Account transactions
 (test_user_id, acct_monzo_current, 'tl-txn-001',
  now() - INTERVAL '1 day', 'TESCO STORES 3217', -45.67, 'GBP',
- 'DEBIT', 'Tesco', 'groceries', NULL),
+ 'DEBIT', 'Tesco', 'Groceries', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-002',
  now() - INTERVAL '2 days', 'TFL TRAVEL CHARGE', -2.80, 'GBP',
- 'DEBIT', 'Transport for London', 'transport', NULL),
+ 'DEBIT', 'Transport for London', 'Transport', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-003',
  now() - INTERVAL '3 days', 'SALARY - ACME CORP', 3200.00, 'GBP',
- 'CREDIT', NULL, 'income', NULL),
+ 'CREDIT', NULL, 'Salary & Income', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-004',
  now() - INTERVAL '4 days', 'AMAZON.CO.UK MARKETPLACE', -29.99, 'GBP',
- 'DEBIT', 'Amazon', 'shopping', 'electronics'),  -- user override
+ 'DEBIT', 'Amazon', 'Shopping', 'Electronics'),  -- user override
 
 (test_user_id, acct_monzo_current, 'tl-txn-005',
  now() - INTERVAL '5 days', 'DIRECT DEBIT - VODAFONE', -32.00, 'GBP',
- 'DIRECT_DEBIT', 'Vodafone', 'bills', NULL),
+ 'DIRECT_DEBIT', 'Vodafone', 'Bills & Subscriptions', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-006',
  now() - INTERVAL '7 days', 'PRET A MANGER LONDON', -6.50, 'GBP',
- 'DEBIT', 'Pret A Manger', 'eating_out', NULL),
+ 'DEBIT', 'Pret A Manger', 'Eating Out', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-007',
  now() - INTERVAL '10 days', 'STANDING ORDER - LANDLORD', -1200.00, 'GBP',
- 'STANDING_ORDER', NULL, 'housing', NULL),
+ 'STANDING_ORDER', NULL, 'General', NULL),
 
 (test_user_id, acct_monzo_current, 'tl-txn-008',
  now() - INTERVAL '14 days', 'SHELL PETROL STATION', -55.40, 'GBP',
- 'DEBIT', 'Shell', 'transport', NULL),
+ 'DEBIT', 'Shell', 'Transport', NULL),
 
 -- Starling Current Account transactions
 (test_user_id, acct_starling_current, 'tl-txn-009',
  now() - INTERVAL '1 day', 'SAINSBURYS SUPERMARKET', -32.18, 'GBP',
- 'DEBIT', 'Sainsbury''s', 'groceries', NULL),
+ 'DEBIT', 'Sainsbury''s', 'Groceries', NULL),
 
 (test_user_id, acct_starling_current, 'tl-txn-010',
  now() - INTERVAL '3 days', 'NETFLIX.COM', -15.99, 'GBP',
- 'DEBIT', 'Netflix', 'entertainment', 'subscriptions'),  -- user override
+ 'DEBIT', 'Netflix', 'Entertainment', 'Bills & Subscriptions'),  -- user override
 
 (test_user_id, acct_starling_current, 'tl-txn-011',
  now() - INTERVAL '6 days', 'TRANSFER IN', 500.00, 'GBP',
- 'CREDIT', NULL, 'transfers', NULL),
+ 'CREDIT', NULL, 'Transfers', NULL),
 
 -- Starling Credit Card transactions
 (test_user_id, acct_starling_cc, 'tl-txn-012',
  now() - INTERVAL '2 days', 'JOHN LEWIS OXFORD ST', -189.00, 'GBP',
- 'DEBIT', 'John Lewis', 'shopping', NULL),
+ 'DEBIT', 'John Lewis', 'Shopping', NULL),
 
 (test_user_id, acct_starling_cc, 'tl-txn-013',
  now() - INTERVAL '5 days', 'WAGAMAMA LONDON', -28.50, 'GBP',
- 'DEBIT', 'Wagamama', 'eating_out', NULL),
+ 'DEBIT', 'Wagamama', 'Eating Out', NULL),
 
 (test_user_id, acct_starling_cc, 'tl-txn-014',
  now() - INTERVAL '8 days', 'PAYMENT RECEIVED - THANK YOU', 200.00, 'GBP',
- 'CREDIT', NULL, 'transfers', NULL);
+ 'CREDIT', NULL, 'Transfers', NULL);
 
 
 -- ── Step 4: balance_history ──────────────────────────────────────────────────

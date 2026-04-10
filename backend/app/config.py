@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # ── TrueLayer ─────────────────────────────────────────────────────────
     truelayer_client_id: str
     truelayer_client_secret: str
-    truelayer_redirect_uri: str = "pennyapp://callback"
+    truelayer_redirect_uri: str = "http://localhost:8000/api/v1/connections/callback"
     truelayer_env: str = "sandbox"  # "sandbox" or "live"
     truelayer_auth_base_url: str = "https://auth.truelayer-sandbox.com"
     truelayer_data_base_url: str = "https://api.truelayer-sandbox.com"
@@ -43,9 +43,38 @@ class Settings(BaseSettings):
 
     # ── Application ───────────────────────────────────────────────────────
     app_env: str = "development"
-    app_debug: bool = True
+    app_debug: bool = False
     app_host: str = "0.0.0.0"
     app_port: int = 8000
+
+    # ── CORS ──────────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins for production.
+    # Example: "https://penny.example.com,https://app.penny.finance"
+    # When empty AND app_debug is False, no origins are allowed (secure default).
+    # When app_debug is True, localhost origins are added automatically.
+    cors_origins: str = ""
+
+    # ── Sentry ────────────────────────────────────────────────────────────
+    # Leave empty to disable Sentry error tracking (e.g. in local dev).
+    # Set to your Sentry DSN in production.
+    sentry_dsn: str = ""
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse CORS_ORIGINS into a list, merging dev origins when debugging."""
+        origins: list[str] = []
+        if self.cors_origins:
+            origins.extend(
+                o.strip() for o in self.cors_origins.split(",") if o.strip()
+            )
+        if self.app_debug:
+            origins.extend([
+                "http://localhost:8080",
+                "http://localhost:3000",
+                "http://127.0.0.1:8080",
+                "http://127.0.0.1:3000",
+            ])
+        return origins
 
 
 settings = Settings()

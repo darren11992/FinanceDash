@@ -49,12 +49,28 @@ dependencies:
   # Environment variables
   flutter_dotenv: ^5.2.1
 
+  # Charts (net worth trend line)
+  fl_chart: ^0.70.2
+
+  # Number formatting (currency display)
+  intl: ^0.20.2
+
+  # Google Fonts (Inter for UI, Geist Mono for numbers)
+  google_fonts: ^6.2.1
+
   # Icons
   cupertino_icons: ^1.0.8
+  shimmer: ^3.0.0
+
+  # Local cache for offline access
+  shared_preferences: ^2.5.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # Mocking library for widget tests (Sprint 6).
+  mocktail: ^1.0.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

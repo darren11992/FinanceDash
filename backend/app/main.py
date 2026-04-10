@@ -4,19 +4,54 @@ FastAPI application entry point.
 Provides:
 - /health endpoint for liveness checks
 - CORS middleware (restricted in production)
-- TrueLayer client placeholder (initialised from config)
-- Router mounting point for future endpoint modules
+- Rate limiting on sensitive endpoints (slowapi)
+- TrueLayer client initialised from config
+- APScheduler for periodic data sync (every 4 hours)
+- Router mounting for all API modules
 """
 
+import logging
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI
+import sentry_sdk
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, get_supabase
+from app.jobs.scheduled_sync import start_scheduler, stop_scheduler
+from app.rate_limit import limiter
 from app.services.truelayer import TrueLayerClient
+
+# Configure the root logger so that all app.* loggers output to the console.
+# Without this, logger.info() / logger.warning() calls throughout the app
+# are silently dropped because no handler is attached.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Sentry — error tracking for production
+# ---------------------------------------------------------------------------
+# Initialise only when a DSN is configured. In local dev (no SENTRY_DSN),
+# this is a no-op and adds zero overhead.
+
+if settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=settings.app_env,
+        traces_sample_rate=0.1,  # 10% of requests get performance traces
+        send_default_pii=False,  # Don't send user IP/email to Sentry
+    )
+    logger.info("Sentry error tracking enabled (env=%s)", settings.app_env)
 
 
 # ---------------------------------------------------------------------------
@@ -38,10 +73,17 @@ async def lifespan(app: FastAPI):
         data_base_url=settings.truelayer_data_base_url,
     )
 
+    # Start the scheduled sync job (every 4 hours).
+    db = get_supabase()
+    app.state.scheduler = start_scheduler(db, app.state.truelayer)
+    logger.info("Application startup complete")
+
     yield
 
     # ── Shutdown ──────────────────────────────────────────────────────────
+    stop_scheduler()
     await app.state.truelayer.close()
+    logger.info("Application shutdown complete")
 
 
 # ---------------------------------------------------------------------------
@@ -57,22 +99,36 @@ app = FastAPI(
 
 
 # ---------------------------------------------------------------------------
+# Rate Limiting (slowapi)
+# ---------------------------------------------------------------------------
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+# ---------------------------------------------------------------------------
+# Global exception handler — prevents leaking internal details in production
+# ---------------------------------------------------------------------------
+
+@app.exception_handler(Exception)
+async def _unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("Unhandled exception on %s %s", request.method, request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+    )
+
+
+# ---------------------------------------------------------------------------
 # Middleware
 # ---------------------------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
-    # In production, restrict this to your app's domain.
-    # For development, allow common local origins.
-    # NOTE: allow_credentials=True is incompatible with allow_origins=["*"].
-    # The CORS spec requires the server to echo the specific origin when
-    # credentials (Authorization header) are included.
-    allow_origins=[
-        "http://localhost:8080",   # Flutter web dev server
-        "http://localhost:3000",   # Alternate dev port
-        "http://127.0.0.1:8080",
-        "http://127.0.0.1:3000",
-    ] if settings.app_debug else [],
+    # Origins are configured via CORS_ORIGINS env var (comma-separated).
+    # In debug mode, localhost origins are added automatically.
+    # See config.py for details.
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -103,15 +159,13 @@ async def health_check():
 # ---------------------------------------------------------------------------
 # Router registration
 # ---------------------------------------------------------------------------
-from app.routers import connections
+from app.routers import accounts, connections, net_worth, sync, transactions
 
 app.include_router(connections.router, prefix="/api/v1")
-
-# Placeholder — wired up in later sprints:
-# from app.routers import accounts, transactions, sync
-# app.include_router(accounts.router, prefix="/api/v1")
-# app.include_router(transactions.router, prefix="/api/v1")
-# app.include_router(sync.router, prefix="/api/v1")
+app.include_router(sync.router, prefix="/api/v1")
+app.include_router(accounts.router, prefix="/api/v1")
+app.include_router(transactions.router, prefix="/api/v1")
+app.include_router(net_worth.router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

@@ -5,18 +5,22 @@
 /// 2. Supabase SDK (auth, database)
 /// 3. Deep link service (TrueLayer OAuth callback)
 /// 4. Riverpod for state management
-/// 5. Auth gate for session-aware routing
+/// 5. Branded splash screen during startup
+/// 6. Auth gate for session-aware routing
 library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'config/app_config.dart';
 import 'providers/connections_provider.dart';
 import 'screens/auth_gate.dart';
 import 'services/deep_link_service.dart';
+import 'theme/penny_colors.dart';
+import 'theme/penny_theme.dart';
 
 /// Global deep link service instance.
 ///
@@ -27,12 +31,19 @@ final deepLinkService = DeepLinkService();
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Show branded splash immediately, before async init completes.
+  runApp(const ProviderScope(child: PennyApp()));
+}
+
+/// Handles async initialisation that was previously in [main].
+///
+/// Returns true once complete so the splash screen can transition
+/// to the auth gate.
+Future<void> _initApp() async {
   // Load environment variables from .env file.
   await dotenv.load(fileName: '.env');
 
   // Init Supabase with the publishable (anon) key.
-  // SDK handles session persistence, token refresh, and
-  // secure storage of the JWT automatically.
   await Supabase.initialize(
     url: AppConfig.supabaseUrl,
     anonKey: AppConfig.supabasePublishableKey,
@@ -41,33 +52,143 @@ Future<void> main() async {
   // listen for incoming deep links (pennyapp://callback).
   await deepLinkService.init();
 
-  runApp(
-    // Wrap the entire app in a ProviderScope so all widgets
-    // can access Riverpod providers.
-    const ProviderScope(child: PennyApp()),
-  );
+  // Pre-warm Google Fonts so Inter is fetched before the first frame.
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.inter(),
+    GoogleFonts.inter(fontWeight: FontWeight.w500),
+    GoogleFonts.inter(fontWeight: FontWeight.w600),
+    GoogleFonts.inter(fontWeight: FontWeight.w700),
+    GoogleFonts.jetBrainsMono(fontWeight: FontWeight.w700),
+  ]);
 }
 
-class PennyApp extends StatelessWidget {
+class PennyApp extends StatefulWidget {
   const PennyApp({super.key});
+
+  @override
+  State<PennyApp> createState() => _PennyAppState();
+}
+
+class _PennyAppState extends State<PennyApp> {
+  bool _ready = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      await _initApp();
+      if (mounted) setState(() => _ready = true);
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Penny',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
-        ),
-        useMaterial3: true,
-        inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
-          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      theme: PennyTheme.dark,
+      home: _ready
+          ? const _DeepLinkHandler(child: AuthGate())
+          : _SplashScreen(error: _error, onRetry: _bootstrap),
+    );
+  }
+}
+
+/// Branded splash screen shown during app startup.
+///
+/// Displays the Penny logo (a coin icon) and name with a subtle
+/// loading indicator. If initialisation fails, shows the error
+/// with a retry button.
+class _SplashScreen extends StatelessWidget {
+  final String? error;
+  final VoidCallback onRetry;
+
+  const _SplashScreen({this.error, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: PennyColors.surfaceDark,
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Coin icon as logo placeholder.
+            Container(
+              width: 96,
+              height: 96,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [PennyColors.primary, PennyColors.primaryAccent],
+                ),
+              ),
+              child: const Icon(
+                Icons.monetization_on_rounded,
+                size: 56,
+                color: PennyColors.onPrimary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Penny',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 32,
+                fontWeight: FontWeight.w700,
+                color: PennyColors.textOnDark,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your finances, simplified.',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                color: PennyColors.textOnDarkMuted,
+              ),
+            ),
+            const SizedBox(height: 48),
+            if (error != null) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  'Failed to start: $error',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: PennyColors.negativeBright,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              OutlinedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Retry'),
+              ),
+            ] else
+              const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: PennyColors.primaryAccent,
+                ),
+              ),
+          ],
         ),
       ),
-      home: const _DeepLinkHandler(child: AuthGate()),
     );
   }
 }
@@ -109,7 +230,7 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Bank connected successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: PennyColors.positive,
           ),
         );
       }
@@ -118,7 +239,7 @@ class _DeepLinkHandlerState extends ConsumerState<_DeepLinkHandler> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to connect bank: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: PennyColors.negative,
           ),
         );
       }

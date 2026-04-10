@@ -133,14 +133,19 @@ COMMENT ON COLUMN public.transactions.user_category IS
 -- Daily balance snapshots per account for net worth trend tracking.
 
 CREATE TABLE IF NOT EXISTS public.balance_history (
-    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    account_id  UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
-    balance     NUMERIC(12,2) NOT NULL,
-    recorded_at DATE NOT NULL DEFAULT CURRENT_DATE,
+    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id       UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    account_id    UUID NOT NULL REFERENCES public.accounts(id) ON DELETE CASCADE,
+    balance       NUMERIC(12,2) NOT NULL,
+    recorded_at   DATE NOT NULL DEFAULT CURRENT_DATE,
+    is_estimated  BOOLEAN NOT NULL DEFAULT FALSE,
 
     UNIQUE(account_id, recorded_at)
 );
+
+COMMENT ON COLUMN public.balance_history.is_estimated IS
+    'TRUE if balance was reconstructed from transactions (reverse-compute fallback). '
+    'FALSE if from running_balance on transactions or live balance snapshot.';
 
 CREATE INDEX IF NOT EXISTS idx_balance_history_user_id
     ON public.balance_history(user_id);

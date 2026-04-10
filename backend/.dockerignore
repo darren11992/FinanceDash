@@ -1,0 +1,42 @@
+# ===========================================================================
+# Docker ignore — keep secrets, dev files, and caches out of the image
+# ===========================================================================
+
+# Secrets — NEVER bake into the image
+.env
+.env.*
+!.env.example
+!.env.production.example
+
+# Python virtual environment (we build a fresh one in the Dockerfile)
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Test files (not needed in production)
+tests/
+requirements-dev.txt
+pytest.ini
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Seed / dev scripts
+seed_mock_data.py
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore

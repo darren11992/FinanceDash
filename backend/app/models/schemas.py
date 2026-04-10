@@ -72,7 +72,10 @@ class ConnectionCallbackIn(BaseModel):
     and sends it here.
     """
 
-    code: str = Field(description="OAuth authorization code from TrueLayer redirect")
+    code: str = Field(
+        max_length=2048,
+        description="OAuth authorization code from TrueLayer redirect",
+    )
 
 
 class ConnectionCallbackOut(BaseModel):
@@ -81,6 +84,28 @@ class ConnectionCallbackOut(BaseModel):
     connection_id: UUID
     provider_name: str
     status: str
+
+
+class ReconnectOut(BaseModel):
+    """Response for POST /api/v1/connections/{id}/reconnect.
+
+    Two possible outcomes:
+      - action = "no_action_needed": consent extended silently, tokens refreshed.
+        auth_url is None.
+      - action = "authentication_needed": user must visit auth_url to re-consent
+        at their bank. The backend returns the auth URL for the client to open.
+    """
+
+    action: str = Field(
+        description="One of: no_action_needed, authentication_needed"
+    )
+    auth_url: str | None = Field(
+        None,
+        description="Bank auth URL (only present when action = authentication_needed)",
+    )
+    message: str = Field(
+        description="Human-readable explanation of the outcome"
+    )
 
 
 # =============================================================================
@@ -150,7 +175,9 @@ class CategoryUpdateIn(BaseModel):
     """Request body for PATCH /api/v1/transactions/{id}/category."""
 
     category: str | None = Field(
-        description="New category name, or null to revert to auto-categorisation"
+        None,
+        max_length=100,
+        description="New category name, or null to revert to auto-categorisation",
     )
 
 
@@ -160,6 +187,14 @@ class CategoryUpdateOut(BaseModel):
     transaction_id: UUID
     category: str | None
     is_user_override: bool
+
+
+class RecategoriseOut(BaseModel):
+    """Response for POST /api/v1/transactions/recategorise."""
+
+    total_reviewed: int
+    updated: int
+    skipped_user_override: int
 
 
 # =============================================================================
@@ -197,6 +232,14 @@ class NetWorthHistoryPoint(BaseModel):
 
     date: date
     net_worth: Decimal
+    is_estimated: bool = Field(
+        False,
+        description=(
+            "True if any contributing balance was reconstructed from "
+            "transactions rather than from a live balance snapshot or "
+            "running_balance."
+        ),
+    )
 
 
 class NetWorthHistoryOut(BaseModel):
@@ -212,11 +255,25 @@ class NetWorthHistoryOut(BaseModel):
 # =============================================================================
 
 
+class SyncConnectionResult(BaseModel):
+    """Per-connection result from a sync run."""
+
+    connection_id: str
+    status: str = Field(description="ok, skipped, or error")
+    detail: str | None = None
+    accounts_synced: int = 0
+    transactions_synced: int = 0
+
+
 class SyncTriggerOut(BaseModel):
     """Response for POST /api/v1/sync."""
 
     message: str
     connections_queued: int
+    results: list[SyncConnectionResult] = Field(
+        default_factory=list,
+        description="Per-connection sync results (debug info)",
+    )
 
 
 class ConnectionSyncStatus(BaseModel):

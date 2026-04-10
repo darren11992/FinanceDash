@@ -30,3 +30,7 @@ mobile/penny/build/
 
 # Supabase local
 supabase/.temp/
+
+# Local tooling / design drafts
+opencode.jsonc
+designs/

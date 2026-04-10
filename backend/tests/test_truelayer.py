@@ -82,6 +82,30 @@ class TestBuildAuthUrl:
         assert state in tl_client._pending_states
         assert tl_client._pending_states[state] == "user-123"
 
+    def test_sandbox_uses_mock_provider(self, tl_client: TrueLayerClient):
+        """Sandbox auth URLs must use uk-cs-mock (Mock Bank only)."""
+        auth_url, _ = tl_client.build_auth_url("user-123")
+        assert "uk-cs-mock" in auth_url
+        assert "uk-ob-all" not in auth_url
+
+    @pytest.mark.asyncio
+    async def test_live_uses_real_providers(self):
+        """Live auth URLs use uk-ob-all uk-oauth-all."""
+        live_client = TrueLayerClient(
+            client_id="live-id",
+            client_secret="live-secret",
+            redirect_uri="https://example.com/callback",
+            auth_base_url="https://auth.truelayer.com",
+            data_base_url="https://api.truelayer.com",
+        )
+        try:
+            auth_url, _ = live_client.build_auth_url("user-123")
+            assert "uk-ob-all" in auth_url
+            assert "uk-oauth-all" in auth_url
+            assert "uk-cs-mock" not in auth_url
+        finally:
+            await live_client.close()
+
 
 # ---------------------------------------------------------------------------
 # validate_state
@@ -262,3 +286,88 @@ class TestGetConnectionMetadata:
             await tl_client.get_connection_metadata("bad-token")
 
         assert exc_info.value.status_code == 401
+
+
+# ---------------------------------------------------------------------------
+# extend_connection
+# ---------------------------------------------------------------------------
+
+
+class TestExtendConnection:
+    """Tests for consent extension via POST /connections/extend."""
+
+    @pytest.mark.asyncio
+    async def test_no_action_needed_returns_tokens(self, tl_client: TrueLayerClient):
+        """When extend succeeds silently, new tokens are returned."""
+        mock_resp = _mock_response(200, {
+            "action_needed": "no_action_needed",
+            "access_token": "new-at-ext",
+            "refresh_token": "new-rt-ext",
+            "expires_in": 3600,
+        })
+        tl_client._http.post = AsyncMock(return_value=mock_resp)
+
+        result = await tl_client.extend_connection("old-rt")
+
+        assert result["action_needed"] == "no_action_needed"
+        assert result["access_token"] == "new-at-ext"
+        assert result["refresh_token"] == "new-rt-ext"
+        assert "token_expires_at" in result
+        assert isinstance(result["token_expires_at"], datetime)
+
+    @pytest.mark.asyncio
+    async def test_authentication_needed_returns_auth_url(self, tl_client: TrueLayerClient):
+        """When bank re-auth is needed, an auth URL is returned."""
+        mock_resp = _mock_response(200, {
+            "action_needed": "authentication_needed",
+            "auth_url": "https://auth.truelayer-sandbox.com/reauth?token=abc",
+        })
+        tl_client._http.post = AsyncMock(return_value=mock_resp)
+
+        result = await tl_client.extend_connection("old-rt")
+
+        assert result["action_needed"] == "authentication_needed"
+        assert result["auth_url"].startswith("https://")
+        # No tokens in this response
+        assert "token_expires_at" not in result
+
+    @pytest.mark.asyncio
+    async def test_sends_correct_payload(self, tl_client: TrueLayerClient):
+        """Verify the request payload and endpoint URL."""
+        mock_resp = _mock_response(200, {
+            "action_needed": "no_action_needed",
+            "access_token": "at",
+            "refresh_token": "rt",
+            "expires_in": 3600,
+        })
+        tl_client._http.post = AsyncMock(return_value=mock_resp)
+
+        await tl_client.extend_connection("my-refresh-token")
+
+        call_args = tl_client._http.post.call_args
+        # Check URL
+        assert call_args[0][0] == "https://auth.truelayer-sandbox.com/api/connections/extend"
+        # Check JSON body
+        assert call_args[1]["json"]["refresh_token"] == "my-refresh-token"
+
+    @pytest.mark.asyncio
+    async def test_failure_raises_truelayer_error(self, tl_client: TrueLayerClient):
+        """Non-200 response raises TrueLayerError."""
+        mock_resp = _mock_response(400, {"error": "invalid_refresh_token"})
+        tl_client._http.post = AsyncMock(return_value=mock_resp)
+
+        with pytest.raises(TrueLayerError) as exc_info:
+            await tl_client.extend_connection("bad-rt")
+
+        assert exc_info.value.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_server_error_raises(self, tl_client: TrueLayerClient):
+        """500 error from TrueLayer raises TrueLayerError."""
+        mock_resp = _mock_response(500, {"error": "internal_error"})
+        tl_client._http.post = AsyncMock(return_value=mock_resp)
+
+        with pytest.raises(TrueLayerError) as exc_info:
+            await tl_client.extend_connection("some-rt")
+
+        assert exc_info.value.status_code == 500

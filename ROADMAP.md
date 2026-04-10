@@ -1,25 +1,27 @@
 # Development Roadmap
 
-**Project:** UK Personal Finance Aggregator
-**Version:** 0.1.0 (Planning Phase)
-**Last Updated:** 2026-03-17
+**Project:** Penny — UK Personal Finance Aggregator
+**Version:** 0.1.0 (Active Development)
+**Last Updated:** 2026-04-07
 **Sprint Duration:** 2 weeks each
 
 ---
 
 ## Sprint Overview
 
-| Sprint | Theme | Duration | Depends On |
-|---|---|---|---|
-| 0 | Project Setup & Tooling | 1 week | — |
-| 1 | Auth & Database Foundation | 2 weeks | Sprint 0 |
-| 2 | TrueLayer Handshake (Sandbox) | 2 weeks | Sprint 1 |
-| 3 | Sync Engine & Transactions | 2 weeks | Sprint 2 |
-| 4 | Dashboard & Net Worth | 2 weeks | Sprint 3 |
-| 5 | Consent Management & Notifications | 2 weeks | Sprint 4 |
-| 6 | Polish, Testing & Sandbox Sign-Off | 2 weeks | Sprint 5 |
-| 7 | Production Prep & TrueLayer Live | 2 weeks | Sprint 6 |
-| 8 | Tech Debt & Dependency Upgrades | 1 week | Sprint 7 |
+| Sprint | Theme | Duration | Depends On | Status |
+|---|---|---|---|---|
+| 0 | Project Setup & Tooling | 1 week | — | Complete |
+| 1 | Auth & Database Foundation | 2 weeks | Sprint 0 | Complete |
+| 2 | TrueLayer Handshake (Sandbox) | 2 weeks | Sprint 1 | Complete |
+| 3 | Sync Engine & Transactions | 2 weeks | Sprint 2 | Complete |
+| 4 | Dashboard & Net Worth | 2 weeks | Sprint 3 | Complete |
+| 5 | Consent Management (No Push Notifications) | 2 weeks | Sprint 4 | Complete |
+| — | Categorisation Rewrite (unplanned) | — | Sprint 5 + Live data | Complete |
+| — | TrueLayer Live Connection (unplanned) | — | Sprint 5 | Complete |
+| 6 | Polish, Testing & Hardening | 2 weeks | Sprint 5 | Complete |
+| 7 | Production Deployment & App Store | 2 weeks | Sprint 6 | Not Started |
+| 8 | Tech Debt & Dependency Upgrades | 1 week | Sprint 7 | Not Started |
 
 **Total estimated timeline: ~16 weeks**
 
@@ -31,16 +33,16 @@
 
 ### Tasks
 
-- [ ] Initialise Git repository with `.gitignore` (Python, Flutter, env files)
-- [ ] Create `backend/` directory with FastAPI skeleton (`main.py`, health check endpoint)
-- [ ] Create `mobile/penny/` Flutter project via `flutter create`
-- [ ] Set up Supabase project (cloud or local via `supabase init`)
-- [ ] Create `.env.example` files for backend and mobile with all required variables
-- [ ] Set up `requirements.txt` / `pyproject.toml` with initial dependencies:
+- [x] Initialise Git repository with `.gitignore` (Python, Flutter, env files)
+- [x] Create `backend/` directory with FastAPI skeleton (`main.py`, health check endpoint)
+- [x] Create `mobile/penny/` Flutter project via `flutter create`
+- [x] Set up Supabase project (cloud or local via `supabase init`)
+- [x] Create `.env.example` files for backend and mobile with all required variables
+- [x] Set up `requirements.txt` / `pyproject.toml` with initial dependencies:
   - `fastapi`, `uvicorn`, `httpx`, `pydantic-settings`, `cryptography`, `supabase-py`, `apscheduler`
-- [ ] Set up `pubspec.yaml` with initial Flutter dependencies:
+- [x] Set up `pubspec.yaml` with initial Flutter dependencies:
   - `supabase_flutter`, `http`, `flutter_riverpod` (or provider of choice), `url_launcher`
-- [ ] Configure linting: `ruff` for Python, `flutter analyze` for Dart
+- [x] Configure linting: `ruff` for Python, `flutter analyze` for Dart
 - [ ] Create basic CI pipeline (GitHub Actions): lint + test for both backend and mobile
 - [ ] Write a `docker-compose.yml` for local development (FastAPI + Supabase local)
 
@@ -58,25 +60,25 @@
 
 ### Week 1: Database Schema
 
-- [ ] Write Supabase migration `001_create_bank_connections.sql`
-- [ ] Write Supabase migration `002_create_accounts.sql`
-- [ ] Write Supabase migration `003_create_transactions.sql`
-- [ ] Write Supabase migration `004_create_balance_history.sql`
-- [ ] Write Supabase migration `005_enable_rls.sql` (all RLS policies from ARCH.md §4.2)
-- [ ] Run migrations against Supabase and verify via SQL editor
-- [ ] Write seed data script for development/testing
+- [x] Write Supabase migration `001_create_bank_connections.sql`
+- [x] Write Supabase migration `002_create_accounts.sql`
+- [x] Write Supabase migration `003_create_transactions.sql`
+- [x] Write Supabase migration `004_create_balance_history.sql`
+- [x] Write Supabase migration `005_enable_rls.sql` (all RLS policies from ARCH.md §4.2)
+- [x] Run migrations against Supabase and verify via SQL editor
+- [x] Write seed data script for development/testing
 
 ### Week 2: Authentication
 
-- [ ] Configure Supabase Auth: enable email/password sign-up
-- [ ] Implement FastAPI JWT verification middleware (validate Supabase JWTs)
-- [ ] Create FastAPI dependency `get_current_user()` that extracts `user_id` from JWT
-- [ ] Build Flutter sign-up screen (email + password)
-- [ ] Build Flutter login screen
-- [ ] Integrate `supabase_flutter` SDK for auth in the mobile app
-- [ ] Store Supabase session/JWT securely on device (Supabase SDK handles this)
-- [ ] Implement logout flow
-- [ ] Test: protected FastAPI endpoint returns 401 without valid JWT, 200 with it
+- [x] Configure Supabase Auth: enable email/password sign-up
+- [x] Implement FastAPI JWT verification middleware (validate Supabase JWTs)
+- [x] Create FastAPI dependency `get_current_user()` that extracts `user_id` from JWT
+- [x] Build Flutter sign-up screen (email + password)
+- [x] Build Flutter login screen
+- [x] Integrate `supabase_flutter` SDK for auth in the mobile app
+- [x] Store Supabase session/JWT securely on device (Supabase SDK handles this)
+- [x] Implement logout flow
+- [x] Test: protected FastAPI endpoint returns 401 without valid JWT, 200 with it
 
 ### Definition of Done
 - A new user can sign up, log in, and log out via the Flutter app
@@ -91,28 +93,28 @@
 
 ### Week 1: Backend — TrueLayer OAuth
 
-- [ ] Register app with TrueLayer and obtain sandbox credentials
-- [ ] Implement `services/truelayer.py`: TrueLayer API client class
+- [x] Register app with TrueLayer and obtain sandbox credentials
+- [x] Implement `services/truelayer.py`: TrueLayer API client class
   - `build_auth_url()` — construct the OAuth redirect URL
   - `exchange_code(code)` — POST to `/connect/token` to get tokens
   - `refresh_access_token(refresh_token)` — refresh expired access tokens
-- [ ] Implement `services/encryption.py`: Fernet encrypt/decrypt for tokens
-- [ ] Create `POST /api/v1/connections/initiate` — returns TrueLayer auth URL
-- [ ] Create `POST /api/v1/connections/callback` — receives auth code, exchanges for tokens, encrypts and stores in `bank_connections`
-- [ ] Create `GET /api/v1/connections` — list connections for current user
-- [ ] Create `DELETE /api/v1/connections/{id}` — revoke and delete
-- [ ] Write unit tests for encryption service
-- [ ] Write integration tests for TrueLayer OAuth flow (mocked)
+- [x] Implement `services/encryption.py`: Fernet encrypt/decrypt for tokens
+- [x] Create `POST /api/v1/connections/initiate` — returns TrueLayer auth URL
+- [x] Create `POST /api/v1/connections/callback` — receives auth code, exchanges for tokens, encrypts and stores in `bank_connections`
+- [x] Create `GET /api/v1/connections` — list connections for current user
+- [x] Create `DELETE /api/v1/connections/{id}` — revoke and delete
+- [x] Write unit tests for encryption service
+- [x] Write integration tests for TrueLayer OAuth flow (mocked)
 
 ### Week 2: Mobile — Connect Bank Flow
 
-- [ ] Build "Connect Bank" button on home screen
-- [ ] Implement deep link handling for `pennyapp://callback` (iOS + Android)
-- [ ] Open TrueLayer auth URL in system browser / in-app browser
-- [ ] Handle callback: extract `code` from deep link and POST to backend
-- [ ] Build "Connected Banks" list screen showing connected institutions
-- [ ] Implement disconnect flow (confirmation dialog + DELETE call)
-- [ ] Test full sandbox flow: connect mock bank → see connection in list
+- [x] Build "Connect Bank" button on home screen
+- [x] Implement deep link handling for `pennyapp://callback` (iOS + Android)
+- [x] Open TrueLayer auth URL in system browser / in-app browser
+- [x] Handle callback: extract `code` from deep link and POST to backend
+- [x] Build "Connected Banks" list screen showing connected institutions
+- [x] Implement disconnect flow (confirmation dialog + DELETE call)
+- [x] Test full sandbox flow: connect mock bank → see connection in list
 
 ### Definition of Done
 - User can tap "Connect Bank", complete TrueLayer sandbox OAuth, and return to the app
@@ -128,34 +130,34 @@
 
 ### Week 1: Sync Engine Core
 
-- [ ] Implement `services/sync_engine.py`:
+- [x] Implement `services/sync_engine.py`:
   - `sync_connection(connection_id)` — full sync flow per ARCH.md §5.3
   - Token refresh logic (check expiry, refresh if needed)
   - Fetch accounts from TrueLayer, upsert into `accounts` table
   - Fetch balances, update `accounts.current_balance` and `balance_history`
   - Fetch transactions with date range logic (initial vs incremental)
   - Upsert transactions with `ON CONFLICT` deduplication (ARCH.md §5.4)
-- [ ] Implement `services/categorisation.py`: map TrueLayer `transaction_classification` to user-facing categories
-- [ ] Handle TrueLayer credit card endpoints (`/data/v1/cards/*`) alongside account endpoints
-- [ ] Write `POST /api/v1/sync` endpoint — triggers sync for current user
-- [ ] Write `GET /api/v1/sync/status` endpoint — returns last sync time and errors
-- [ ] Write unit tests for deduplication logic
-- [ ] Write unit tests for categorisation mapping
+- [x] Implement `services/categorisation.py`: map TrueLayer `transaction_classification` to user-facing categories
+- [x] Handle TrueLayer credit card endpoints (`/data/v1/cards/*`) alongside account endpoints
+- [x] Write `POST /api/v1/sync` endpoint — triggers sync for current user
+- [x] Write `GET /api/v1/sync/status` endpoint — returns last sync time and errors
+- [x] Write unit tests for deduplication logic
+- [x] Write unit tests for categorisation mapping
 
 ### Week 2: Scheduled Sync & Mobile Transaction Feed
 
-- [ ] Set up APScheduler to run `sync_all_active_connections()` every 4 hours
-- [ ] Implement connection-level locking to prevent concurrent syncs of same connection
-- [ ] Implement error handling and retry logic (ARCH.md §5.5)
-- [ ] Create `GET /api/v1/transactions` endpoint with pagination, filtering (account, category, date range)
-- [ ] Build Flutter transaction list screen:
+- [x] Set up APScheduler to run `sync_all_active_connections()` every 4 hours
+- [x] Implement connection-level locking to prevent concurrent syncs of same connection
+- [x] Implement error handling and retry logic (ARCH.md §5.5)
+- [x] Create `GET /api/v1/transactions` endpoint with pagination, filtering (account, category, date range)
+- [x] Build Flutter transaction list screen:
   - Unified feed from all accounts, sorted by date
   - Each row: date, description, amount (colour-coded), category icon, source account
   - Pull-to-refresh triggers manual sync
-- [ ] Build Flutter transaction detail view
-- [ ] Implement `PATCH /api/v1/transactions/{id}/category` for manual category override
-- [ ] Build category picker UI in transaction detail
-- [ ] Test: verify no duplicates after multiple syncs of same data
+- [x] Build Flutter transaction detail view
+- [x] Implement `PATCH /api/v1/transactions/{id}/category` for manual category override
+- [x] Build category picker UI in transaction detail
+- [x] Test: verify no duplicates after multiple syncs of same data
 
 ### Definition of Done
 - Backend fetches and stores accounts, balances, and transactions from TrueLayer sandbox
@@ -171,30 +173,32 @@
 
 ### Week 1: Backend — Net Worth API
 
-- [ ] Create `GET /api/v1/accounts` — list all accounts with balances
-- [ ] Create `GET /api/v1/accounts/{id}` — single account detail
-- [ ] Create `GET /api/v1/net-worth` — returns:
+- [x] Create `GET /api/v1/accounts` — list all accounts with balances
+- [x] Create `GET /api/v1/accounts/{id}` — single account detail
+- [x] Create `GET /api/v1/net-worth` — returns:
   - `total_net_worth` (sum of current/savings balances minus credit card balances)
   - `accounts[]` with per-account contribution
   - `last_updated` timestamp
-- [ ] Create `GET /api/v1/net-worth/history` — daily net worth from `balance_history`, supports `period` param (7d, 30d, 90d)
-- [ ] Ensure `balance_history` is populated correctly during each sync
-- [ ] Write tests for net worth calculation (verify credit cards are subtracted)
+- [x] Create `GET /api/v1/net-worth/history` — daily net worth from `balance_history`, supports `period` param (7d, 30d, 90d)
+- [x] Ensure `balance_history` is populated correctly during each sync
+- [x] Write tests for net worth calculation (verify credit cards are subtracted)
+- [x] **Enhancement:** Balance history backfill — two-tier strategy (running_balance preferred, reverse-compute fallback) with `is_estimated` flag, runs on initial sync
 
 ### Week 2: Mobile — Dashboard UI
 
-- [ ] Build home/dashboard screen:
+- [x] Build home/dashboard screen:
   - Net worth summary card (large number, currency formatted)
   - Change indicator (vs yesterday / last week / last month)
   - Stale data indicator showing when each account was last synced
-- [ ] Build account list section (expandable cards per account):
+- [x] Build account list section (expandable cards per account):
   - Account name, institution logo placeholder, balance
   - Tap to view account transactions
-- [ ] Build simple net worth trend chart (line chart, last 30 days)
+- [x] Build simple net worth trend chart (line chart, last 30 days)
   - Use `fl_chart` or similar Flutter charting package
-- [ ] Implement pull-to-refresh on dashboard (triggers sync, refreshes data)
-- [ ] Handle loading states and empty states (no accounts connected yet)
-- [ ] Handle credit card display (show balance as liability, negative contribution to net worth)
+- [x] Implement pull-to-refresh on dashboard (triggers sync, refreshes data)
+- [x] Handle loading states and empty states (no accounts connected yet)
+- [x] Handle credit card display (show balance as liability, negative contribution to net worth)
+- [x] **Enhancement:** Estimated data indicator on trend chart when backfilled data is present
 
 ### Definition of Done
 - Dashboard shows correct net worth with credit cards subtracted
@@ -204,95 +208,151 @@
 
 ---
 
-## Sprint 5: Consent Management & Notifications (2 weeks)
+## Sprint 5: Consent Management (2 weeks) — COMPLETE
 
 **Goal:** The app proactively manages 90-day consent windows and alerts users before expiry.
 
+> **Note:** Push notifications (FCM) were explicitly deferred. This sprint covers consent
+> lifecycle detection, in-app banners, and reconnect flow only. No Firebase, no Apple
+> Developer Account, no device token storage.
+
 ### Week 1: Backend — Consent Lifecycle
 
-- [ ] Implement `jobs/consent_checker.py`:
+- [x] Implement `jobs/consent_checker.py`:
   - Daily job that queries connections approaching expiry (< 7 days)
   - Updates status to `expiring_soon` or `expired`
-- [ ] Implement push notification infrastructure:
-  - Choose provider: Firebase Cloud Messaging (FCM)
-  - Store device tokens in a `user_devices` table
-  - Create notification service to send push notifications
-- [ ] Send notifications at 7 days and 1 day before expiry
-- [ ] Send notification on actual expiry
-- [ ] Create `POST /api/v1/connections/{id}/reconnect` — generates fresh TrueLayer auth URL for re-consent
-- [ ] On successful re-consent callback: reset `consent_created_at`, `consent_expires_at`, update status to `active`
-- [ ] Write tests for consent expiry logic (mock time)
+- [x] Create `POST /api/v1/connections/{id}/reconnect` — calls TrueLayer `extend_connection()`, returns either fresh tokens (no_action_needed) or a re-auth URL (authentication_needed)
+- [x] On successful re-consent callback: reset `consent_created_at`, `consent_expires_at`, update status to `active`
+- [x] Write tests for consent expiry logic (mock time) — 9 tests in `test_consent_checker.py`
+- [x] Write tests for reconnect endpoint — 7 tests in `test_connections.py`
+- [x] Wire consent checker as second APScheduler job in `scheduled_sync.py`
+- [ ] ~~Implement push notification infrastructure (FCM)~~ — **Deferred** to post-MVP
+- [ ] ~~Send notifications at 7 days and 1 day before expiry~~ — **Deferred** to post-MVP
+- [ ] ~~Send notification on actual expiry~~ — **Deferred** to post-MVP
 
 ### Week 2: Mobile — Consent UI
 
-- [ ] Add consent status indicators to connected banks list:
+- [x] Add consent status indicators to connected banks list:
   - Green: active (> 7 days remaining)
   - Amber: expiring soon (< 7 days)
   - Red: expired
-- [ ] Build dashboard banner: "Your {bank} connection expires in X days" (dismissible but persistent)
-- [ ] Build re-consent flow: tap banner or bank → opens TrueLayer re-auth
-- [ ] Handle expired state gracefully:
+- [x] Build dashboard banner (`_ExpiryBanner`): "Your {bank} connection expires in X days"
+- [x] Build re-consent flow (`_ReconnectBanner`): tap banner or bank → calls reconnect endpoint → opens TrueLayer re-auth if needed
+- [x] Handle expired state gracefully:
   - Historical data still visible but labelled as stale
   - "Reconnect" button prominently displayed
   - No crash or blank screen
-- [ ] Integrate FCM for push notifications (iOS + Android setup)
-- [ ] Test full consent lifecycle:
-  - Connect → wait (or mock) → receive "expiring soon" notification → re-consent → status resets
+- [x] Connection model extended: `daysUntilExpiry`, `isExpiringSoon`, `isExpired`, `needsReconnect`
+- [ ] ~~Integrate FCM for push notifications (iOS + Android setup)~~ — **Deferred** to post-MVP
 
 ### Definition of Done
-- Backend correctly identifies and flags expiring/expired connections
-- Push notifications fire at 7 days and 1 day before expiry
-- User can re-consent from within the app and the 90-day window resets
-- Expired connections display historical data with clear "expired" labelling
+- ~~Push notifications fire at 7 days and 1 day before expiry~~ — Deferred
+- [x] Backend correctly identifies and flags expiring/expired connections
+- [x] User can re-consent from within the app and the 90-day window resets
+- [x] Expired connections display historical data with clear "expired" labelling
+- [x] 257 backend tests passing (including consent checker, reconnect, categorisation)
 
 ---
 
-## Sprint 6: Polish, Testing & Sandbox Sign-Off (2 weeks)
+## Unplanned: Categorisation Rewrite — COMPLETE
 
-**Goal:** App is stable, well-tested, and fully functional against TrueLayer sandbox.
+**Trigger:** Connecting a real UK bank revealed that TrueLayer's `transaction_classification`
+array is always empty for real providers. All transactions were categorised as "General".
+
+### What was done
+
+- [x] Rewrote `services/categorisation.py` with three-tier approach:
+  1. TrueLayer `transaction_classification` array (when available — works for sandbox only)
+  2. Description-based regex keyword matching (~130 rules covering UK supermarkets, restaurants, transport, subscriptions, banks, shopping, entertainment, health, travel)
+  3. Default fallback to "General"
+- [x] Payment-type structural rules (e.g. "BILL PAYMENT VIA FASTER PAYMENT TO") evaluated first to correctly classify person-to-person transfers even when reference text mentions a merchant
+- [x] Updated `sync_engine.py` to pass `description` to `categorise_transaction()`
+- [x] Rewrote `test_categorisation.py` — 65 tests covering all three tiers, including tests against real UK bank transaction descriptions
+- [x] Added `POST /api/v1/transactions/recategorise` endpoint — re-runs categorisation engine on all existing transactions in the database (preserves `user_category` overrides)
+- [x] 6 tests for recategorise endpoint in `test_transactions.py`
+
+---
+
+## Unplanned: TrueLayer Live Connection — COMPLETE
+
+**Trigger:** TrueLayer Live credentials obtained. Switched from sandbox to live to test
+with a real UK bank account.
+
+### What was done
+
+- [x] Switched `.env` to live TrueLayer credentials (no code changes — `is_sandbox` auto-detects from auth URL)
+- [x] Successfully connected real UK bank account via TrueLayer Live
+- [x] Real accounts, balances, and transactions syncing correctly
+- [x] Improved error logging in `exchange_code()` to include TrueLayer response body
+- [x] Discovered and fixed: real UK banks return empty `transaction_classification` (led to categorisation rewrite above)
+
+---
+
+## Sprint 6: Polish, Testing & Hardening (2 weeks) — COMPLETE
+
+**Goal:** App is stable, well-tested, and production-ready. Already working against TrueLayer Live with real bank data.
+
+> **Context:** TrueLayer Live is already connected and real data is flowing. This sprint
+> is about hardening what we have, not sandbox sign-off. The categorisation rewrite and
+> recategorise endpoint are already done.
 
 ### Week 1: Testing & Bug Fixes
 
-- [ ] Write end-to-end tests for critical flows:
+- [x] Write end-to-end tests for critical flows — 25 tests in `test_e2e_flows.py`:
   - Sign up → connect bank → sync → view dashboard → view transactions
   - Disconnect bank → data removed
   - Re-consent flow
-- [ ] Backend test coverage target: 80%+ on services and routers
-- [ ] Flutter widget tests for key screens (dashboard, transaction list)
-- [ ] Load testing: simulate 100 concurrent syncs, verify no duplicates or deadlocks
-- [ ] Fix all known bugs from previous sprints
-- [ ] Security review:
-  - Verify tokens are encrypted in DB (inspect raw values)
-  - Verify RLS prevents cross-user data access
-  - Verify JWT validation cannot be bypassed
-  - Verify no secrets in source code or logs
+- [x] Backend test coverage: **304 tests** across 15 test files covering all services and routers
+- [x] Flutter widget tests for key screens — 33 tests in `widget_test.dart` (dashboard, transaction list, connections, auth)
+- [x] Load testing — 8 tests in `test_load.py`: simulate 100 concurrent syncs, verify no duplicates or deadlocks
+- [x] Fix all known bugs from previous sprints
+- [x] Security review — comprehensive audit with 13 findings (3 High, 7 Medium, 3 Low), all fixed:
+  - Rate limiting via `slowapi` on all sensitive endpoints
+  - `APP_DEBUG` default changed to `False`
+  - OAuth state nonce store migrated to `TTLCache(maxsize=10_000, ttl=600)`
+  - TrueLayer error details sanitised (no leak to clients)
+  - Input validation: `max_length` on `code` and `category` fields
+  - Category filter SQL injection prevention via regex validation
+  - JWT issuer validation added
+  - Global exception handler added (generic 500s in production)
+  - `certifi` pinned in requirements.txt
+  - 14 security tests in `test_security.py` — all passing
 
 ### Week 2: UX Polish & Performance
 
-- [ ] Add loading skeletons / shimmer effects on all data-loading screens
-- [ ] Add error states with retry buttons
-- [ ] Implement local caching strategy (SQLite or Hive for offline access to recent data)
-- [ ] Optimise transaction list performance (lazy loading, pagination)
-- [ ] Review and improve category mapping accuracy
-- [ ] Add app icon and splash screen
-- [ ] Accessibility review (contrast, screen reader labels, tap target sizes)
-- [ ] Final walkthrough of all flows on both iOS and Android simulators
+- [x] Add loading skeletons / shimmer effects on all data-loading screens — `skeleton_loaders.dart` with 6 reusable shimmer widgets (using `shimmer ^3.0.0`)
+- [x] Add error states with retry buttons — all screens show error + retry on failure
+- [x] Implement local caching strategy — `CacheService` using `shared_preferences` with JSON serialisation and 1-hour staleness window; cache-first-then-network pattern in all providers; cache cleared on sign-out
+- [x] Optimise transaction list performance (lazy loading, pagination) — already implemented via paginated API + PostgREST `.range()`
+- [x] Review and improve category mapping accuracy (done: categorisation rewrite + recategorise endpoint)
+- [x] Add branded splash screen — `PennyApp` converted to StatefulWidget with gradient coin logo, "Penny" title, tagline, and loading spinner during async init; error state with retry
+- [x] Accessibility review — comprehensive audit, all P0/P1/P2 issues fixed:
+  - `textOnDarkMuted` contrast upgraded from #5A7A96 to #85A0B9 (WCAG AA compliant)
+  - Net worth chart wrapped in descriptive `Semantics` (value, direction, percentage)
+  - All 6 skeleton loaders wrapped in `Semantics(label: ..., excludeSemantics: true)`
+  - Error messages wrapped in `Semantics(liveRegion: true)` for screen reader announcement
+  - Loading spinners given `semanticsLabel` properties
+  - FAB given `tooltip: 'Connect Bank'`
+- [ ] Final walkthrough of all flows on both iOS and Android simulators — **Deferred** (Xcode not installed; tested via `flutter build web`)
 
 ### Definition of Done
-- All critical paths tested and passing
-- No P0/P1 bugs outstanding
-- App feels responsive and handles errors gracefully
-- Security checklist passed
+- [x] All critical paths tested and passing (304 backend tests, 33 Flutter widget tests)
+- [x] No P0/P1 bugs outstanding
+- [x] App feels responsive and handles errors gracefully (shimmer skeletons, cache-first loading, retry buttons)
+- [x] Security checklist passed (13 findings, all resolved)
 
 ---
 
-## Sprint 7: Production Preparation & TrueLayer Live (2 weeks)
+## Sprint 7: Production Deployment & App Store (2 weeks)
 
-**Goal:** Migrate from sandbox to live TrueLayer credentials, deploy to production infrastructure, prepare for first real users.
+**Goal:** Deploy to production infrastructure and prepare for first real users.
+
+> **Context:** TrueLayer Live is already working in local dev (done ahead of schedule).
+> This sprint focuses on production infrastructure and app store submission.
 
 ### Week 1: Infrastructure & Deployment
 
-- [ ] Set up production Supabase project (separate from dev/sandbox)
+- [ ] Set up production Supabase project (separate from dev)
 - [ ] Run all migrations against production database
 - [ ] Deploy FastAPI to production hosting (options: Railway, Fly.io, AWS ECS)
 - [ ] Set up production environment variables (secrets manager)
@@ -301,12 +361,12 @@
 - [ ] Configure production CORS and rate limiting
 - [ ] Set up staging environment (mirrors production, uses TrueLayer sandbox)
 
-### Week 2: TrueLayer Live & App Store Prep
+### Week 2: App Store Prep
 
-- [ ] Apply for TrueLayer production access (requires compliance review)
-- [ ] Switch to TrueLayer live credentials in production config
-- [ ] Test with real bank account (developer's own account)
-- [ ] Verify real transaction data flows through correctly
+- [x] ~~Apply for TrueLayer production access~~ — Already have live credentials
+- [x] ~~Switch to TrueLayer live credentials~~ — Already done in local dev
+- [x] ~~Test with real bank account (developer's own account)~~ — Already done
+- [x] ~~Verify real transaction data flows through correctly~~ — Already verified, including categorisation fix
 - [ ] Prepare App Store listing (screenshots, description, privacy policy)
 - [ ] Prepare Google Play listing
 - [ ] Draft privacy policy and terms of service (required for app stores and FCA compliance)
@@ -365,16 +425,65 @@ These items are candidates for future sprints after the MVP is stable:
 
 | Feature | Estimated Effort | Priority |
 |---|---|---|
+| Trading212 integration (investment accounts) | 1.5 sprints | High |
 | Budgeting (monthly limits per category) | 2 sprints | High |
 | Recurring payment / subscription detection | 1 sprint | High |
 | Spending analytics and charts | 1 sprint | Medium |
 | Savings goals | 1 sprint | Medium |
+| Manual account entry (Chip, other non-API accounts) | 0.5 sprint | Medium |
 | Transaction search (full-text) | 0.5 sprint | Medium |
 | Export to CSV | 0.5 sprint | Low |
 | Multi-currency support | 1 sprint | Low |
 | Shared accounts / households | 2 sprints | Low |
 | Biometric auth (FaceID / fingerprint) | 0.5 sprint | Medium |
 | Dark mode | 0.5 sprint | Low |
+
+---
+
+## Trading212 Integration — Detail
+
+**Status:** Researched, ready to implement post-MVP
+**API:** `https://live.trading212.com/api/v0/` (REST, API key auth, free for account holders)
+**Docs:** `https://t212public-api-docs.redoc.ly/` (requires Redocly login)
+
+Trading212 provides a public REST API giving read access to Invest & ISA account data. Authentication is via a personal API key generated in the T212 app (Settings > API). No OAuth flow — user pastes their key into Penny.
+
+### Key Endpoints for Penny
+
+| Endpoint | Data | Use in Penny |
+|---|---|---|
+| `GET equity/account/cash` | total, free, invested, P&L, pieCash | Account-level balances for net worth |
+| `GET equity/portfolio` | All open positions (ticker, qty, avgPrice, currentPrice, ppl) | Holdings breakdown |
+| `GET history/dividends` | Dividend payments (amount, ticker, date) | Income tracking |
+| `GET equity/pies` | Pie allocations and performance | Portfolio groupings |
+| `GET equity/account/info` | Account ID, currency | Account metadata |
+
+### Implementation Plan (~1.5 sprints)
+
+**Week 1 — Backend:**
+- New `services/trading212.py` — API client (httpx, API key auth, rate limit handling)
+- Schema extension: `provider_type` column on `accounts` table (`open_banking` | `trading212` | `manual`), new `investment_positions` table (ticker, quantity, average_price, current_price, ppl, fx_ppl, pie_name, account_id, user_id), new `investment_dividends` table
+- New `routers/trading212.py` — `POST /connections/trading212` (store encrypted API key), `GET /trading212/portfolio`, `DELETE /connections/trading212/{id}`
+- Sync engine extension: T212 positions sync alongside Open Banking account sync
+- Net worth calculation updated to include T212 `total` (cash + invested)
+
+**Week 2 — Flutter:**
+- "Add Trading212" flow in connections screen — API key input field (no browser redirect)
+- Portfolio/holdings screen showing positions, current value, P&L per holding
+- T212 account card on home dashboard contributing to net worth
+- Dividend history view
+
+**Week 3 — Polish:**
+- T212 sync scheduling (less frequent than bank sync — daily is fine, positions don't change as fast)
+- Error handling for invalid/revoked API keys
+- Tests for T212 service, sync, and routers
+
+### Chip / Non-API Accounts
+
+Chip (getchip.uk) savings accounts are held at ClearBank, which is a wholesale B2B bank. ClearBank accounts are not accessible via consumer Open Banking flows (TrueLayer/Yapily). Chip has no public API. Options:
+- **Manual balance entry** — user enters/updates balance periodically (0.5 sprint, included in backlog above)
+- **CSV import** — if Chip provides export functionality
+- **Wait for Open Finance** — FCA framework that would extend Open Banking obligations to savings/investment providers (timeline: 2027+)
 
 ---
 

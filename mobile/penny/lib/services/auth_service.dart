@@ -7,6 +7,8 @@ library;
 
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'cache_service.dart';
+
 class AuthService {
   final SupabaseClient _client;
 
@@ -48,9 +50,10 @@ class AuthService {
 
   /// Sign out the current user.
   ///
-  /// Clears the local session. The Supabase SDK handles token
+  /// Clears the local cache and session. The Supabase SDK handles token
   /// invalidation on the server side.
   Future<void> signOut() async {
+    await CacheService.clearAll();
     await _client.auth.signOut();
   }
 }

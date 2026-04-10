@@ -40,8 +40,11 @@ class AuthGate extends ConsumerWidget {
         }
         return const LoginScreen();
       },
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(semanticsLabel: 'Loading'),
+        ),
+      ),
       error: (_, _) => const LoginScreen(),
     );
   }

@@ -44,8 +44,34 @@ class BankConnection {
     );
   }
 
+  /// Serialise to JSON for local caching.
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'provider_id': providerId,
+    'provider_name': providerName,
+    'status': status,
+    'last_synced_at': lastSyncedAt?.toIso8601String(),
+    'consent_created_at': consentCreatedAt.toIso8601String(),
+    'consent_expires_at': consentExpiresAt.toIso8601String(),
+    'error_message': errorMessage,
+    'created_at': createdAt.toIso8601String(),
+  };
+
   /// Whether the consent is still valid.
   bool get isConsentValid => consentExpiresAt.isAfter(DateTime.now());
+
+  /// Number of days until consent expires (negative if already expired).
+  int get daysUntilExpiry => consentExpiresAt.difference(DateTime.now()).inDays;
+
+  /// Whether the backend has marked this connection as expiring soon.
+  bool get isExpiringSoon => status == 'expiring_soon';
+
+  /// Whether the backend has marked this connection as expired.
+  bool get isExpired => status == 'expired';
+
+  /// Whether the connection needs user action to reconnect
+  /// (expiring soon or already expired).
+  bool get needsReconnect => isExpiringSoon || isExpired;
 
   /// Human-readable status label for the UI.
   String get statusLabel {

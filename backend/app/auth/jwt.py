@@ -96,6 +96,7 @@ async def get_current_user(
             signing_key.key,
             algorithms=["ES256", "RS256"],
             audience="authenticated",
+            issuer=f"{settings.supabase_url}/auth/v1",
         )
     except jwt.ExpiredSignatureError:
         raise HTTPException(
@@ -103,10 +104,10 @@ async def get_current_user(
             detail="Token has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.InvalidAudienceError:
+    except (jwt.InvalidAudienceError, jwt.InvalidIssuerError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token audience",
+            detail="Invalid token audience or issuer",
             headers={"WWW-Authenticate": "Bearer"},
         )
     except jwt.InvalidTokenError:

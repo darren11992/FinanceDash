@@ -1,0 +1,45 @@
+# ===========================================================================
+# Fly.io configuration — Penny API
+# ===========================================================================
+# Deploy with: fly deploy --config backend/fly.toml
+# Docs: https://fly.io/docs/reference/configuration/
+# ===========================================================================
+
+app = "penny-api"
+primary_region = "lhr"  # London — closest to UK users and TrueLayer servers
+
+[build]
+  dockerfile = "Dockerfile"
+
+# ---------------------------------------------------------------------------
+# HTTP service — public-facing API
+# ---------------------------------------------------------------------------
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "off"    # Keep running — APScheduler needs to stay alive
+  auto_start_machines = true
+  min_machines_running = 1      # Always have 1 machine running
+  processes = ["app"]
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 250
+    soft_limit = 200
+
+# ---------------------------------------------------------------------------
+# Health check — Fly.io uses this to verify the app is alive
+# ---------------------------------------------------------------------------
+[[http_service.checks]]
+  interval = "30s"
+  timeout = "5s"
+  grace_period = "15s"
+  method = "GET"
+  path = "/health"
+
+# ---------------------------------------------------------------------------
+# Machine sizing — shared-cpu-1x with 512MB is plenty for 2-10 users
+# ---------------------------------------------------------------------------
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

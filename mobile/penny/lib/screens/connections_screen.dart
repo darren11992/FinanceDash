@@ -14,12 +14,42 @@ import 'package:url_launcher/url_launcher.dart';
 import '../models/connection.dart';
 import '../providers/connections_provider.dart';
 import '../services/api_service.dart';
+import '../theme/penny_colors.dart';
+import '../widgets/skeleton_loaders.dart';
 
-class ConnectionsScreen extends ConsumerWidget {
+class ConnectionsScreen extends ConsumerStatefulWidget {
   const ConnectionsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConnectionsScreen> createState() => _ConnectionsScreenState();
+}
+
+class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // When the user returns from the browser after completing OAuth,
+    // refresh the connections list to pick up the newly created connection
+    // (the GET callback already ran sync + backfill on the backend).
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(connectionsProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final connectionsAsync = ref.watch(connectionsProvider);
 
     return Scaffold(
@@ -35,13 +65,14 @@ class ConnectionsScreen extends ConsumerWidget {
       ),
       body: connectionsAsync.when(
         data: (connections) => _ConnectionsList(connections: connections),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ConnectionsSkeleton(),
         error: (error, _) => _ErrorView(error: error),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _connectBank(context, ref),
         icon: const Icon(Icons.add),
         label: const Text('Connect Bank'),
+        tooltip: 'Connect Bank',
       ),
     );
   }
@@ -105,21 +136,25 @@ class _ConnectionsList extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.account_balance, size: 64, color: Colors.grey[400]),
+              Icon(
+                Icons.account_balance,
+                size: 64,
+                color: PennyColors.textOnDarkMuted,
+              ),
               const SizedBox(height: 16),
               Text(
                 'No banks connected yet',
-                style: Theme.of(
-                  context,
-                ).textTheme.titleMedium?.copyWith(color: Colors.grey[600]),
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: PennyColors.textOnDarkMuted,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Tap the button below to connect your first bank account.',
                 textAlign: TextAlign.center,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: PennyColors.textOnDarkMuted,
+                ),
               ),
             ],
           ),
@@ -154,43 +189,36 @@ class _ConnectionTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _statusColor(
-            connection.status,
-          ).withValues(alpha: 0.15),
-          child: Icon(
-            Icons.account_balance,
-            color: _statusColor(connection.status),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: CircleAvatar(
+              backgroundColor: PennyColors.connectionStatus(
+                connection.status,
+              ).withValues(alpha: 0.15),
+              child: Icon(
+                Icons.account_balance,
+                color: PennyColors.connectionStatus(connection.status),
+              ),
+            ),
+            title: Text(connection.providerName),
+            subtitle: Text(
+              '${connection.statusLabel} · Expires ${_formatDate(connection.consentExpiresAt)}',
+            ),
+            trailing: IconButton(
+              icon: Icon(Icons.delete_outline, color: PennyColors.negative),
+              tooltip: 'Disconnect',
+              onPressed: () => _confirmDisconnect(context, ref),
+            ),
           ),
-        ),
-        title: Text(connection.providerName),
-        subtitle: Text(
-          '${connection.statusLabel} · Expires ${_formatDate(connection.consentExpiresAt)}',
-        ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete_outline, color: Colors.red),
-          tooltip: 'Disconnect',
-          onPressed: () => _confirmDisconnect(context, ref),
-        ),
+
+          // Reconnect banner for expiring_soon / expired connections.
+          if (connection.needsReconnect)
+            _ReconnectBanner(connection: connection),
+        ],
       ),
     );
-  }
-
-  Color _statusColor(String status) {
-    switch (status) {
-      case 'active':
-        return Colors.green;
-      case 'expiring_soon':
-        return Colors.orange;
-      case 'expired':
-      case 'revoked':
-        return Colors.red;
-      case 'error':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
   }
 
   String _formatDate(DateTime date) {
@@ -213,7 +241,7 @@ class _ConnectionTile extends ConsumerWidget {
           ),
           TextButton(
             onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: TextButton.styleFrom(foregroundColor: PennyColors.negative),
             child: const Text('Disconnect'),
           ),
         ],
@@ -241,13 +269,142 @@ class _ConnectionTile extends ConsumerWidget {
   }
 }
 
-class _ErrorView extends StatelessWidget {
+/// Inline banner shown on connection tiles that need reconnection.
+///
+/// Displays an amber (expiring_soon) or red (expired) strip with a
+/// "Reconnect" button. Handles both reconnect outcomes:
+/// - `no_action_needed`: shows success snackbar (list auto-refreshes).
+/// - `authentication_needed`: launches the bank's auth URL in a browser.
+class _ReconnectBanner extends ConsumerStatefulWidget {
+  final BankConnection connection;
+
+  const _ReconnectBanner({required this.connection});
+
+  @override
+  ConsumerState<_ReconnectBanner> createState() => _ReconnectBannerState();
+}
+
+class _ReconnectBannerState extends ConsumerState<_ReconnectBanner> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final conn = widget.connection;
+    final isExpired = conn.isExpired;
+    final color = isExpired ? PennyColors.negative : PennyColors.warning;
+
+    final String label;
+    if (isExpired) {
+      label = 'Connection expired — tap to reconnect';
+    } else {
+      final days = conn.daysUntilExpiry;
+      label = 'Expires in $days day${days == 1 ? '' : 's'} — tap to renew';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(12),
+          bottomRight: Radius.circular(12),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: color,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          if (_loading)
+            const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          else
+            TextButton(
+              onPressed: _reconnect,
+              style: TextButton.styleFrom(
+                foregroundColor: color,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                visualDensity: VisualDensity.compact,
+              ),
+              child: const Text('Reconnect'),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _reconnect() async {
+    setState(() => _loading = true);
+
+    try {
+      final result = await ref
+          .read(connectionsProvider.notifier)
+          .reconnectConnection(widget.connection.id);
+
+      if (!mounted) return;
+
+      final action = result['action'] as String?;
+      final message = result['message'] as String? ?? '';
+
+      if (action == 'authentication_needed') {
+        final authUrl = result['auth_url'] as String?;
+        if (authUrl != null) {
+          final uri = Uri.parse(authUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Could not open the bank authorization page.'),
+                ),
+              );
+            }
+          }
+        }
+      } else {
+        // no_action_needed — consent renewed silently.
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Reconnect failed: ${e.message}')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+}
+
+class _ErrorView extends ConsumerWidget {
   final Object error;
 
   const _ErrorView({required this.error});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final message = error is ApiException
         ? (error as ApiException).message
         : '$error';
@@ -258,7 +415,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: PennyColors.negativeBright,
+            ),
             const SizedBox(height: 16),
             Text(
               'Failed to load connections',
@@ -266,6 +427,12 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            OutlinedButton.icon(
+              onPressed: () => ref.invalidate(connectionsProvider),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Retry'),
+            ),
           ],
         ),
       ),

@@ -3,6 +3,9 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic-settings==2.7.1
 
+# Production process manager
+gunicorn==23.0.0
+
 # Database
 supabase==2.28.3
 
@@ -12,6 +15,14 @@ httpx==0.28.1
 # Security
 cryptography==44.0.0
 PyJWT==2.12.1
+certifi>=2024.8.30
+slowapi==0.1.9
+
+# Templating (callback HTML pages)
+jinja2>=3.1.4
+
+# Caching (TTL store for OAuth state nonces)
+cachetools==5.5.1
 
 # Environment
 python-dotenv==1.0.1
@@ -19,6 +30,5 @@ python-dotenv==1.0.1
 # Scheduling
 apscheduler==3.10.4
 
-# Testing
-pytest==8.3.4
-pytest-asyncio==0.24.0
+# Monitoring
+sentry-sdk[fastapi]==2.19.2
